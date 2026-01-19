@@ -1,52 +1,65 @@
-name: Market Cycle Runner (Parallel + Commit)
+name: Market Cycle Runner (Index + Parallel FNO + Commit)
 
 on:
   schedule:
-    - cron: "*/5 3-10 * * 1-5"   # Every 5 min, Mon–Fri
+    # Every 5 minutes, Monday–Friday (IST 9:00–15:45)
+    - cron: "*/5 3-10 * * 1-5"
   workflow_dispatch:
 
 env:
   TZ: Asia/Kolkata
 
+# Prevent overlapping cycles
 concurrency:
   group: market-cycle
   cancel-in-progress: false
 
 jobs:
-  # ==========================================
-  # JOB 1: INDEX (RUN FIRST)
-  # ==========================================
+  # =====================================================
+  # JOB 1: INDEX + SECTOR (RUN FIRST)
+  # =====================================================
   index_job:
+    name: Index Collector
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Market Time Check
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Market Time Check (IST)
         run: |
           NOW=$(date +%H%M)
+          echo "Current IST Time: $NOW"
           if [ "$NOW" -lt "0900" ] || [ "$NOW" -gt "1545" ]; then
             echo "⛔ Outside market hours"
             exit 0
           fi
 
-      - name: Prepare folders
+      - name: Prepare Folders
         run: |
-          mkdir -p parquet/index parquet/fno logs
+          mkdir -p parquet/index logs
 
       - name: Run Index Script
-        run: python DCSEC_BROAD.py
+        run: |
+          python DCSEC_BROAD.py
 
-  # ==========================================
-  # JOB 2: FNO (PARALLEL)
-  # ==========================================
+  # =====================================================
+  # JOB 2: FNO — ONE SCRIPT = ONE WORKER (PARALLEL)
+  # =====================================================
   fno_parallel:
+    name: FNO Worker - ${{ matrix.script }}
     needs: index_job
     runs-on: ubuntu-latest
 
@@ -67,48 +80,64 @@ jobs:
           - DCFNO11.py
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Market Time Check
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Market Time Check (IST)
         run: |
           NOW=$(date +%H%M)
+          echo "Current IST Time: $NOW"
           if [ "$NOW" -lt "0900" ] || [ "$NOW" -gt "1545" ]; then
             echo "⛔ Outside market hours"
             exit 0
           fi
 
-      - name: Prepare folders
+      - name: Prepare Folders
         run: |
           mkdir -p parquet/fno logs
 
       - name: Run FNO Script
-        run: python ${{ matrix.script }}
+        run: |
+          echo "▶ Running ${{ matrix.script }}"
+          python ${{ matrix.script }}
 
-  # ==========================================
-  # JOB 3: COMMIT & PUSH (AFTER ALL FINISH)
-  # ==========================================
+  # =====================================================
+  # JOB 3: COMMIT & PUSH DATA (AFTER ALL COMPLETE)
+  # =====================================================
   commit_push:
+    name: Commit & Push Market Data
     needs: fno_parallel
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - name: Commit & Push Market Data
+      - name: Commit and Push
         run: |
           git config user.name "market-bot"
           git config user.email "market-bot@users.noreply.github.com"
 
           git add parquet logs || true
-          git diff --cached --quiet && echo "No changes" && exit 0
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
 
           git commit -m "📊 Market data update $(date '+%Y-%m-%d %H:%M IST')"
           git push
