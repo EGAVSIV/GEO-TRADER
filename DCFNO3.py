@@ -1,12 +1,11 @@
 import pandas as pd
-import os, random, time, logging
+import os, logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tvDatafeed import TvDatafeed, Interval
 
 # =====================================================
 # CONFIG
 # =====================================================
-UPDATE_INTERVAL_SECONDS = 3
 MAX_WORKERS = 12
 BARS = 300
 
@@ -41,11 +40,13 @@ for tf in TIMEFRAMES:
 # =====================================================
 # FNO SYMBOLS
 # =====================================================
-fno_symbols = [ 
 
+# =====================================================
+# FNO SYMBOLS
+# =====================================================
+fno_symbols = [ 
     'GRASIM','HAL','HDFCAMC','HDFCBANK','HDFCLIFE','HEROMOTOCO','HINDALCO','HINDPETRO','HINDUNILVR','HINDZINC',
-    'HUDCO','ICICIBANK','ICICIGI','ICICIPRULI','IDEA','IDFCFIRSTB','IEX','IGL','IIFL','INDIGO','INDUSINDBK',
-  ]
+    'HUDCO','ICICIBANK','ICICIGI','ICICIPRULI','IDEA','IDFCFIRSTB','IEX','IGL','IIFL','INDIGO','INDUSINDBK']
 
 # =====================================================
 # INDICATORS
@@ -67,6 +68,7 @@ def calc_bollinger(close, period=20, std=2):
 # =====================================================
 def process_fno(symbol):
     tv = TvDatafeed()
+
     for tf, interval in TIMEFRAMES.items():
         try:
             df = tv.get_hist(symbol, "NSE", interval, n_bars=BARS)
@@ -79,9 +81,15 @@ def process_fno(symbol):
             df["bb_upper"], df["bb_mid"], df["bb_lower"] = calc_bollinger(df["close"])
 
             save = os.path.join(FNO_PATH, tf, f"{symbol}.parquet")
+
             if os.path.exists(save):
                 old = pd.read_parquet(save)
-                df = pd.concat([old, df]).drop_duplicates().tail(BARS)
+                df = (
+                    pd.concat([old, df])
+                    .drop_duplicates()
+                    .sort_index()
+                    .tail(BARS)
+                )
 
             df.to_parquet(save)
 
@@ -91,17 +99,22 @@ def process_fno(symbol):
     return f"✅ FNO {symbol}"
 
 # =====================================================
-# MAIN LOOP
+# MAIN (RUN ONCE & EXIT)
 # =====================================================
-if __name__ == "__main__":
+def main():
     print("🚀 FNO Collector Started")
 
-    while True:
-        start = time.time()
-        random.shuffle(fno_symbols)
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as exe:
+        futures = [exe.submit(process_fno, s) for s in fno_symbols]
 
-        with ProcessPoolExecutor(MAX_WORKERS) as exe:
-            for f in as_completed([exe.submit(process_fno, s) for s in fno_symbols]):
-                print(f.result())
+        for f in as_completed(futures):
+            print(f.result())
 
-        time.sleep(max(0, UPDATE_INTERVAL_SECONDS - (time.time() - start)))
+    print("✅ FNO Collection Cycle Completed")
+
+if __name__ == "__main__":
+    main()
+
+
+
+    
