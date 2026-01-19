@@ -1,4 +1,4 @@
-name: Market Cycle Runner (Index + Parallel FNO + Commit)
+name: Market Cycle Runner (Index + Parallel FNO + Commit + Restart)
 
 on:
   schedule:
@@ -8,6 +8,7 @@ on:
 
 env:
   TZ: Asia/Kolkata
+  GIT_SHA: ${{ github.sha }}
 
 # Prevent overlapping cycles
 concurrency:
@@ -23,9 +24,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repo (Exact Commit)
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.GIT_SHA }}
+          fetch-depth: 1
           persist-credentials: true
 
       - name: Setup Python
@@ -80,9 +83,11 @@ jobs:
           - DCFNO11.py
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repo (Exact Commit)
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.GIT_SHA }}
+          fetch-depth: 1
           persist-credentials: true
 
       - name: Setup Python
@@ -114,7 +119,7 @@ jobs:
           python ${{ matrix.script }}
 
   # =====================================================
-  # JOB 3: COMMIT & PUSH DATA (AFTER ALL COMPLETE)
+  # JOB 3: COMMIT & PUSH DATA
   # =====================================================
   commit_push:
     name: Commit & Push Market Data
@@ -122,9 +127,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repo (Exact Commit)
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.GIT_SHA }}
+          fetch-depth: 1
           persist-credentials: true
 
       - name: Commit and Push
@@ -141,3 +148,28 @@ jobs:
 
           git commit -m "📊 Market data update $(date '+%Y-%m-%d %H:%M IST')"
           git push
+
+  # =====================================================
+  # JOB 4: WAIT 5 SECONDS & RESTART WORKFLOW
+  # =====================================================
+  restart_workflow:
+    name: Restart Workflow After 5 Seconds
+    needs: commit_push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait 5 seconds
+        run: sleep 5
+
+      - name: Trigger workflow again
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          WORKFLOW_FILE: market-cycle.yml
+          REF: main
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/actions/workflows/$WORKFLOW_FILE/dispatches \
+            -d "{\"ref\":\"$REF\"}"
