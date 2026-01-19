@@ -37,10 +37,15 @@ TIMEFRAMES = {
 for tf in TIMEFRAMES:
     os.makedirs(os.path.join(FNO_PATH, tf), exist_ok=True)
 
-fno_symbols = [ 
+# =====================================================
+# FNO SYMBOLS
+# =====================================================
+fno_symbols = [
+    'PIDILITIND','PERSISTENT','PETRONET','LTIM','INDIANB','INDHOTEL','HFCL',
+    'HAVELLS','BRITANNIA','BSE','CAMS','CANBK','CDSL','CGPOWER','CHOLAFIN',
+    'CIPLA','COALINDIA','COFORGE','COLPAL','CONCOR','CROMPTON'
+]
 
-    'UNOMINDA','UPL','VBL','VEDL','VOLTAS','WIPRO','YESBANK','ZYDUSLIFE','BANKNIFTY','CNXFINANCE','CNXMIDCAP',
-    'NIFTY','NIFTYJR','360ONE','ABB','ABCAPITAL','ADANIENSOL','ADANIENT','ADANIGREEN','ADANIPORTS','ALKEM']
 # =====================================================
 # INDICATORS
 # =====================================================
@@ -107,8 +112,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-    
-
