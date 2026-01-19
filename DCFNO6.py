@@ -40,7 +40,7 @@ for tf in TIMEFRAMES:
 # =====================================================
 # FNO SYMBOLS
 # =====================================================
-fno_symbols = [
+fno_symbols = [ 
     'PIDILITIND','PERSISTENT','PETRONET','LTIM','INDIANB','INDHOTEL','HFCL',
     'HAVELLS','BRITANNIA','BSE','CAMS','CANBK','CDSL','CGPOWER','CHOLAFIN',
     'CIPLA','COALINDIA','COFORGE','COLPAL','CONCOR','CROMPTON'
@@ -112,3 +112,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
