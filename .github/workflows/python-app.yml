@@ -1,11 +1,3 @@
-- name: Prepare Market Data Folders
-  run: |
-    mkdir -p market_data
-    mkdir -p market_data/fno
-    mkdir -p market_data/broader_index
-    mkdir -p market_data/sector_index
-
-
 name: Market Cycle Runner (Index + Parallel FNO + Commit + Restart)
 
 on:
