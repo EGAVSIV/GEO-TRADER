@@ -39,9 +39,8 @@ for tf in TIMEFRAMES:
 
 fno_symbols = [ 
 
-    'UNOMINDA','UPL','VBL','VEDL','VOLTAS','WIPRO','YESBANK','ZYDUSLIFE','BANKNIFTY','CNXFINANCE','CNXMIDCAP',
-    'NIFTY','NIFTYJR','360ONE','ABB','ABCAPITAL','ADANIENSOL','ADANIENT','ADANIGREEN','ADANIPORTS','ALKEM']
-
+    'LICHSGFIN','LICI','LODHA','LT','LTF','LUPIN','M&M','MANAPPURAM','MANKIND','MARICO','MARUTI','MAXHEALTH',
+    'MAZDOCK','MCX','MFSL','MOTHERSON','MPHASIS','MUTHOOTFIN','NATIONALUM','NAUKRI','NBCC','NCC','NESTLEIND']
 # =====================================================
 # INDICATORS
 # =====================================================
@@ -112,5 +111,3 @@ if __name__ == "__main__":
 
 
     
-
-        time.sleep(max(0, UPDATE_INTERVAL_SECONDS - (time.time() - start)))
