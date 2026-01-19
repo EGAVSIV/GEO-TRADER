@@ -6,7 +6,6 @@ from tvDatafeed import TvDatafeed, Interval
 # =====================================================
 # CONFIG
 # =====================================================
-UPDATE_INTERVAL_SECONDS = 3
 MAX_WORKERS = 6
 BARS = 300
 
@@ -43,6 +42,7 @@ broader_index = [
     'NIFTY','BANKNIFTY','CNXMIDCAP','CNXSMALLCAP','CNX500',
     'CNXFINANCE','NIFTYJR','CNX100','NIFTY_TOP_10_EW'
 ]
+
 sector_index = [
     'CNXREALTY','CNXPSUBANK','CNXMETAL','CNXIT','CNXSERVICE',
     'CNXPSE','CNXCONSUMPTION','CNXINFRA','CNXENERGY','CNXAUTO',
@@ -53,13 +53,15 @@ sector_index = [
 ]
 
 # =====================================================
-# WORKER
+# WORKER FUNCTION
 # =====================================================
 def process_index(symbol, bucket_path):
     tv = TvDatafeed()
+
     for tf, interval in TIMEFRAMES.items():
         try:
             df = tv.get_hist(symbol, "NSE", interval, n_bars=BARS)
+
             if df is None or df.empty:
                 continue
 
@@ -68,7 +70,12 @@ def process_index(symbol, bucket_path):
 
             if os.path.exists(save):
                 old = pd.read_parquet(save)
-                df = pd.concat([old, df]).drop_duplicates().tail(BARS)
+                df = (
+                    pd.concat([old, df])
+                    .drop_duplicates()
+                    .sort_index()
+                    .tail(BARS)
+                )
 
             df.to_parquet(save)
 
@@ -78,22 +85,22 @@ def process_index(symbol, bucket_path):
     return f"✅ INDEX {symbol}"
 
 # =====================================================
-# MAIN LOOP
+# MAIN (RUN ONCE & EXIT)
 # =====================================================
-if __name__ == "__main__":
+def main():
     print("🚀 Index Collector Started")
 
-    while True:
-        start = time.time()
+    tasks = []
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as exe:
+        for s in broader_index:
+            tasks.append(exe.submit(process_index, s, BROADER_PATH))
+        for s in sector_index:
+            tasks.append(exe.submit(process_index, s, SECTOR_PATH))
 
-        tasks = []
-        with ProcessPoolExecutor(MAX_WORKERS) as exe:
-            for s in broader_index:
-                tasks.append(exe.submit(process_index, s, BROADER_PATH))
-            for s in sector_index:
-                tasks.append(exe.submit(process_index, s, SECTOR_PATH))
+        for f in as_completed(tasks):
+            print(f.result())
 
-            for f in as_completed(tasks):
-                print(f.result())
+    print("✅ Index Collection Cycle Completed")
 
-        time.sleep(max(0, UPDATE_INTERVAL_SECONDS - (time.time() - start)))
+if __name__ == "__main__":
+    main()
