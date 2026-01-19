@@ -1,0 +1,17 @@
+tradingview-datafeed
+pyarrow
+numpy
+pandas
+scipy
+matplotlib
+requests
+openpyxl
+streamlit
+ta-lib
+ta-lib
+plotly
+
+
+
+
+
