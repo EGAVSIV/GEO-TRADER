@@ -40,14 +40,11 @@ for tf in TIMEFRAMES:
 # =====================================================
 # FNO SYMBOLS
 # =====================================================
-
-# =====================================================
-# FNO SYMBOLS
-# =====================================================
-fno_symbols = [ 
-
-    'NMDC','NTPC','NUVAMA','NYKAA','OBEROIRLTY','OFSS','OIL','ONGC','PAGEIND','PATANJALI','PAYTM',
-    'PFC','PGEL','PHOENIXLTD','PIIND','PNB','PNBHOUSING','POLICYBZR','POLYCAB','NHPC','HCLTECH','POWERGRID']
+fno_symbols = [
+    'PIDILITIND','PERSISTENT','PETRONET','LTIM','INDIANB','INDHOTEL','HFCL',
+    'HAVELLS','BRITANNIA','BSE','CAMS','CANBK','CDSL','CGPOWER','CHOLAFIN',
+    'CIPLA','COALINDIA','COFORGE','COLPAL','CONCOR','CROMPTON'
+]
 
 # =====================================================
 # INDICATORS
@@ -115,7 +112,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-    
